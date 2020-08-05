@@ -109,10 +109,11 @@ class InputTextBox(Textbox):
         super(InputTextBox, self).__init__(font, rect_dimensions, text)
         self.prompt = prompt
         # Create a display textbox for the prompt
-        self.prompt_text_box = Textbox(font, (rect_dimensions[0], rect_dimensions[1], rect_dimensions[2], self.get_prompt_height()), self.prompt)
+        self.prompt_text_box = Textbox(font, (rect_dimensions[0], rect_dimensions[1], rect_dimensions[2], self.get_prompt_height()+10), self.prompt)
         # Create a rect for the input box that is directly below the display prompt but within the whole box dimensions
         # print(self.prompt_text_box.box_rect)
         self.input_box_rect = pygame.Rect(self.prompt_text_box.box_rect.x, self.prompt_text_box.box_rect.y+self.prompt_text_box.box_rect.height, self.prompt_text_box.box_rect.width, rect_dimensions[3]-self.prompt_text_box.box_rect.height)
+        self.input_text_rect = pygame.Rect(self.input_box_rect.x+5, self.input_box_rect.y+5, self.input_box_rect.width-10, self.input_box_rect.height-10)
         # print(self.input_box_rect)
         # Current view:
         # entire input box contains Textbox prompt and Rect input_box_rect
@@ -123,8 +124,7 @@ class InputTextBox(Textbox):
         
         # height of text to calculate text height
         font_height = self.font.size(self.prompt)[1]
-        y = font_height
-        line_spacing = -2
+        y = 0
 
         while prompt_copy:
             i = 1
@@ -144,9 +144,8 @@ class InputTextBox(Textbox):
             # remove calculated text from self.text
             prompt_copy = prompt_copy[i:]
 
-            y += font_height + line_spacing
-        print(f'font_height: {font_height}')
-        print(f'fxn returns: {y}')
+            y += font_height
+
         return y
 
     def draw_prompt(self, surface, box_color, text_color):
@@ -156,7 +155,7 @@ class InputTextBox(Textbox):
     def draw_input_box(self, surface, box_color, text_color):
         pygame.draw.rect(surface, box_color, self.input_box_rect)
         # note: text will always be white
-        helper_fxns.drawText(surface, self.text, text_color, self.input_box_rect, self.font)
+        helper_fxns.drawText(surface, self.text, text_color, self.input_text_rect, self.font)
 
 class Scene(object):
     def __init__(self):
