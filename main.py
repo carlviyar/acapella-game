@@ -32,8 +32,8 @@ class Song():
         self.title = title
         self.skill = skill
         self.memorized = False
-    def add_skill_point(self):
-        self.skill += 1
+    def add_skill_point(self, points):
+        self.skill += points
         if self.skill >= 5:
             self.memorized = True
    
@@ -57,12 +57,9 @@ class Textbox():
         self.text = text
         self.font = font
 
-    # draw the actual box
-    def draw_box(self, surface, color):
-        pygame.draw.rect(surface, color, self.box_rect)
-
     # Draw the text onto the surface wrapped
-    def draw_text(self, surface, color, aa=False, bkg=None):
+    def draw_textbox(self, surface, box_color, text_color, aa=False, bkg=None):
+        pygame.draw.rect(surface, box_color, self.box_rect)
         rect = self.text_rect
         text_copy = self.text
         y = rect.top
@@ -90,10 +87,10 @@ class Textbox():
 
             # render the line and blit it to the surface
             if bkg:
-                image = self.font.render(text_copy[:i], 1, color, bkg)
+                image = self.font.render(text_copy[:i], 1, text_color, bkg)
                 image.set_colorkey(bkg)
             else:
-                image = self.font.render(text_copy[:i], aa, color)
+                image = self.font.render(text_copy[:i], aa, text_color)
 
             surface.blit(image, (rect.left, y))
             y += fontHeight + lineSpacing
@@ -149,8 +146,7 @@ class InputTextBox(Textbox):
         return y
 
     def draw_prompt(self, surface, box_color, text_color):
-        self.prompt_text_box.draw_box(surface, box_color)
-        self.prompt_text_box.draw_text(surface, text_color)
+        self.prompt_text_box.draw_textbox(surface, box_color, text_color)
     
     def draw_input_box(self, surface, box_color, text_color):
         pygame.draw.rect(surface, box_color, self.input_box_rect)
@@ -174,10 +170,12 @@ class Rehearsal(Scene):
     def __init__(self):
         super(Rehearsal, self).__init__()
         self.text_font = pygame.font.SysFont('Arial', 30)
-        self.prompt = 'Write your command here: [Song] [Skill] [# of points]'
+        self.prompt = 'Write your command here: [Song], [Skill], [# of points]'
         self.input_textbox = InputTextBox(text_font, (250, 650, 700, 125), '', self.prompt)
+        self.dirty_rects = []
 
     def render(self, surface):
+        global acquired_skill_points
         # Display rehearsal screen with skills and song boxes
         screen.fill((255, 255, 255))
         helper_fxns.draw_rehearsal_header(surface, week, acquired_skill_points)
@@ -192,6 +190,7 @@ class Rehearsal(Scene):
         pass
 
     def handle_events(self, game_events, active=True):
+        global acquired_skill_points
         for rhsl_event in game_events:
             # check MOUSEBUTTONDOWN event
             if rhsl_event.type == pygame.MOUSEBUTTONDOWN:
@@ -205,8 +204,13 @@ class Rehearsal(Scene):
             elif rhsl_event.type == pygame.KEYDOWN:
                 if active:
                     if rhsl_event.key == pygame.K_RETURN:
-                        # write code for what to do with text
-                        self.parse_input(self.input_textbox.text)
+                        # if the input wasn't valid, then raise error textbox
+                        error_message = self.parse_input(self.input_textbox.text)
+                        if error_message is not None:
+                            error_box = Textbox(text_font, (400, 300, 400, 200), text=error_message)
+                            error_box.draw_textbox(screen, (0, 0, 0), (255, 255, 255))
+                            pygame.display.update((400, 300, 400, 200))
+                            helper_fxns.wait()
                         self.input_textbox.text = ''
                     elif rhsl_event.key == pygame.K_BACKSPACE:
                         self.input_textbox.text = self.input_textbox.text[:-1]
@@ -214,11 +218,43 @@ class Rehearsal(Scene):
                         self.input_textbox.text += rhsl_event.unicode
 
     def parse_input(self, input_text):
-        pass
-        # parse the input text
+        global acquired_skill_points
+        str_lst = input_text.split(', ')
+        print(str_lst)
+        if len(str_lst) != 3:
+            return "Error: you inputted an incorrect number of arguments. Please list a valid song, skill name, and points to use. Press any key to continue."
+        song = str_lst[0]
+        skill = str_lst[1]
+        if str_lst[2].isnumeric():
+            points = int(str_lst[2])
+            if points > acquired_skill_points:
+                # TOO MANY POINTS
+                return "Error: you inputted a number of points too large. Please input an integer number less than or equal to your current skill points for the third argument. Press any key to continue."
+        else:
+            # INVALID POINTS ARG: return error message
+            return "Error: you inputted an invalid number of points. Please input an integer number less than or equal to your current skill points for the third argument. Press any key to continue."
+
+        # check validity of command args
+        for song_rep in songs:
+            if song_rep.title == song:
+                song_rep.add_skill_point(points)
+                break
+        else:
+            # INVALID SONG ARG
+            return "Error: you inputted an invalid song name. Please input a song name listed in your repertoire. Press any key to continue."
+        for skill_rep in skills:
+            if skill_rep.name == skill:
+                skill_rep.add_skill_point(points)
+                break
+        else:
+            # INVALID SKILL ARG
+            return "Error: you inputted an invalid skill name. Please input a skill name listed under skills. Press any key to continue."
+        
+        acquired_skill_points -= points
 
     
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+# screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 clock = pygame.time.Clock()
 week = 1
 
@@ -230,7 +266,7 @@ skills.append(Skill("Musicality"))
 skills.append(Skill("Performance"))
 skills.append(Skill("Blend"))
 # Keeps track of skill points acquired from gigs, weeks, etc.
-acquired_skill_points = 0
+acquired_skill_points = 5
 
 # Create songs
 songs = []

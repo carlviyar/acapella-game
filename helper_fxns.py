@@ -123,3 +123,9 @@ def draw_rehearsal_header(surface, week, acquired_skill_points):
     surface.blit(title_surface, (10, (100-title_font.size('ABCDEFGHIJKLMNOPQRSTUVWYZ')[1])/2))
     text_surface = text_font.render(f'Skill Points: {acquired_skill_points}', True, (0, 0, 0))
     surface.blit(text_surface, (1200-450, (100-text_font.size('ABCDEFGHIJKLMNOPQRSTUVWYZ')[1])/2))
+
+def wait():
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                return
