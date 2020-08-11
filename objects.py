@@ -24,6 +24,58 @@ class Skill():
     def add_skill_point(self, points):
         self.points += points
 
+class Player():
+    '''
+    Class to save progress of week, songs learned, skill points, etc.
+    '''
+    def __init__(self, skills=[Skill("Intonation"), Skill("Memorization"), Skill("Musicality"), Skill("Performance"), Skill("Blend")], week=1, skill_points=1, repertoire=[Song("Happy Birthday"), Song("Fly Me to the Moon")]):
+        self.skills = skills
+        self.songs = [Song('Happy Birthday')]
+        self.repertoire = repertoire
+        self.week = week
+        self.skill_points = skill_points
+
+    # pass in a number of points and increment skill_points by that much
+    def gain_points(self, points):
+        if points > 0:
+            self.skill_points += points
+    
+    # update week
+    def increment_week(self):
+        self.week += 1
+
+    # learn a new song and add to songs list
+    def learn_song(self, song):
+        self.songs.append(song)
+    
+    def unlearn_song(self, song_name):
+        for index,song in enumerate(self.songs):
+            if song.title == song_name:
+                del self.songs[index]
+                break
+        else:
+            return False
+
+    
+    # increase skill points for a specified skill
+    def increase_skill(self, skill_name, points):
+        # iterate through skills to make sure it is a good skill_name
+        for skill in self.skills:
+            if skill.name == skill_name:
+                skill.add_skill_point(points)
+                break
+        else:
+            return False
+    
+    # add skill points to song
+    def practice_song(self, song_name, points):
+        for song in self.songs:
+            if song.title == song_name:
+                song.add_skill_point(points)
+                break
+        else:
+            return False
+
 class Textbox():
 
     def __init__(self, font, rect_dimensions, text=''):

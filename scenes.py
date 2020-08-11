@@ -16,24 +16,22 @@ class Scene(object):
         raise NotImplementedError
 
 class Rehearsal(Scene):
-    def __init__(self, screen, week, songs, skills, acquired_skill_points):
+
+    def __init__(self, screen, player):
         super(Rehearsal, self).__init__()
         self.text_font = pygame.font.SysFont('Arial', 30)
         self.prompt = 'Write your command here: [Song or Skill name], [# of points]'
         self.input_textbox = objects.InputTextBox(self.text_font, (250, 650, 700, 125), '', self.prompt)
         self.dirty_rects = []
-        self.week = week
-        self.songs = songs
-        self.skills = skills
-        self.acquired_skill_points = acquired_skill_points
+        self.player = player
         self.screen = screen
 
     def render(self):
         # Display rehearsal screen with skills and song boxes
         self.screen.fill((255, 255, 255))
-        helper_fxns.draw_rehearsal_header(self.screen, self.week, self.acquired_skill_points)
-        helper_fxns.draw_songs(self.screen, self.songs, self.text_font)
-        helper_fxns.draw_skills(self.screen, self.skills)
+        helper_fxns.draw_rehearsal_header(self.screen, self.player.week, self.player.skill_points)
+        helper_fxns.draw_songs(self.screen, self.player.songs, self.text_font)
+        helper_fxns.draw_skills(self.screen, self.player.skills)
         # Draw textboxes and the text in them
         self.input_textbox.draw_input_box(self.screen, (0, 0, 0), (255, 255, 255))
         self.input_textbox.draw_prompt(self.screen, (0, 0, 0), (255, 255, 255))
@@ -73,13 +71,17 @@ class Rehearsal(Scene):
                         self.input_textbox.text += rhsl_event.unicode
 
     def parse_input(self, input_text):
+
+        # split input_text into list of strings
         str_lst = input_text.split(', ')
+
+        # check points argument
         if len(str_lst) != 2:
             return "Error: you inputted an incorrect number of arguments. Please list a valid song, skill name, and points to use. Press any key to continue."
         song_or_skill = str_lst[0]
         if str_lst[1].isnumeric():
             points = int(str_lst[1])
-            if points > self.acquired_skill_points:
+            if points > self.player.skill_points:
                 # TOO MANY POINTS
                 return "Error: you inputted a number of points too large. Please input an integer number less than or equal to your current skill points for the third argument. Press any key to continue."
         else:
@@ -87,17 +89,23 @@ class Rehearsal(Scene):
             return "Error: you inputted an invalid number of points. Please input an integer number less than or equal to your current skill points for the third argument. Press any key to continue."
 
         # check validity of command args
-        for song_rep in self.songs:
-            if song_rep.title == song_or_skill:
-                song_rep.add_skill_point(points)
-                break
-        else:
-            for skill_rep in self.skills:
-                if skill_rep.name == song_or_skill:
-                    skill_rep.add_skill_point(points)
-                    break
-            else:
-            # INVALID SKILL ARG
-                return "Error: you inputted an invalid song or skill name. Please input a skill name listed under skills. Press any key to continue."
+
         
-        self.acquired_skill_points -= points
+        if self.player.increase_skill(song_or_skill, points) is False:
+            if self.player.practice_song(song_or_skill, points) is False:
+                return "Error: you inputted an invalid song or skill name. Please input a skill name listed under skills. Press any key to continue."
+
+        # for song_rep in self.player.songs:
+        #     if song_rep.title == song_or_skill:
+        #         song_rep.add_skill_point(points)
+        #         break
+        # else:
+        #     for skill_rep in self.player.skills:
+        #         if skill_rep.name == song_or_skill:
+        #             skill_rep.add_skill_point(points)
+        #             break
+        #     else:
+        #     # INVALID SKILL ARG
+        #         return "Error: you inputted an invalid song or skill name. Please input a skill name listed under skills. Press any key to continue."
+        
+        self.player.skill_points -= points
